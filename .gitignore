@@ -1,0 +1,27 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Optional: uploaded files (if not needed in repo)
+uploads/
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Dependency locks (if you only use yarn or npm, ignore the other)
+package-lock.json
+yarn.lock
