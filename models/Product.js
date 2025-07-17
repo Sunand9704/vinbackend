@@ -57,9 +57,15 @@ const productSchema = new mongoose.Schema({
     min: 0
   },
   images: [{
+  url: {
     type: String,
     required: true
-  }],
+  },
+  public_id: {
+    type: String,
+    required: true
+  }
+}],
   isAvailable: {
     type: Boolean,
     default: true

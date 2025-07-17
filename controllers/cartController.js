@@ -6,7 +6,6 @@ exports.getCart = async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.userId })
       .populate('items.product', 'name price image');
-
     if (!cart) {
       cart = await Cart.create({ user: req.user.userId, items: [] });
     }

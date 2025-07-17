@@ -7,6 +7,7 @@ const Cart = require('../models/Cart');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
+    
     if (!cart) {
       cart = new Cart({ user: req.user.id, items: [] });
       await cart.save();

@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const path = require('path');
-const fs = require('fs').promises;
+const fs = require('fs');
+const cloudinary = require('../utils/cloudinary');
 
 // Get all products
 exports.getAllProducts = async (req, res) => {
@@ -16,26 +17,28 @@ exports.getAllProducts = async (req, res) => {
 exports.createProduct = async (req, res) => {
   try {
     const {
-      name,
-      description,
-      price,
-      category,
-      stock,
-      length,
-      width,
-      height,
-      discount,
-      isDiscountActive,
-      discountStartDate,
-      discountEndDate,
-      offerPrice,
-      offerStartDate,
-      offerEndDate,
-      isOfferActive
+      name, description, price, category, stock,
+      length, width, height, discount, isDiscountActive,
+      discountStartDate, discountEndDate, offerPrice,
+      offerStartDate, offerEndDate, isOfferActive
     } = req.body;
 
-    // Handle image uploads
-    const images = req.files ? req.files.map(file => file.path) : [];
+    const uploadedImages = [];
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: 'products',
+        });
+
+        uploadedImages.push({
+          url: result.secure_url,
+          public_id: result.public_id,
+        });
+
+        fs.unlinkSync(file.path); // Delete temp local file
+      }
+    }
 
     const product = new Product({
       name,
@@ -46,7 +49,7 @@ exports.createProduct = async (req, res) => {
       length,
       width,
       height,
-      images,
+      images: uploadedImages,
       discount,
       isDiscountActive,
       discountStartDate,
@@ -59,86 +62,56 @@ exports.createProduct = async (req, res) => {
 
     await product.save();
     res.status(201).json(product);
+
   } catch (error) {
+    console.error(error);
     res.status(400).json({ error: error.message });
   }
 };
-
 // Update product
 exports.updateProduct = async (req, res) => {
   try {
     const productId = req.params.id;
     const updateData = { ...req.body };
+    const existingProduct = await Product.findById(productId);
 
-    // Handle new image uploads
-    if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => file.path);
-      
-      // Get existing product to handle old images
-      const existingProduct = await Product.findById(productId);
-      if (existingProduct) {
-        // Delete old images that are not in the new set
-        const oldImages = existingProduct.images || [];
-        for (const oldImage of oldImages) {
-          if (!newImages.includes(oldImage)) {
-            try {
-              await fs.unlink(oldImage);
-            } catch (err) {
-              console.error('Error deleting old image:', err);
-            }
-          }
-        }
-      }
-      
-      updateData.images = newImages;
-    }
-
-    const product = await Product.findByIdAndUpdate(
-      productId,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    if (!product) {
+    if (!existingProduct) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    res.json(product);
+    console.log(req.files)
+
+  
   } catch (error) {
+    console.error(error);
     res.status(400).json({ error: error.message });
   }
 };
-
-// ... existing code ...
-
+// ...existing code...
 // Delete product
 exports.deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Delete associated images
+    // Delete images from Cloudinary
     for (const image of product.images) {
       try {
-        const fullPath = path.join(__dirname, '..', image);
-        await fs.unlink(fullPath);
+        await cloudinary.uploader.destroy(image.public_id);
       } catch (err) {
-        console.error('Error deleting image:', err);
+        console.error('Error deleting image from Cloudinary:', err);
       }
     }
 
-    // Use findByIdAndDelete instead of remove()
     await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-
-// ... existing code ...
 
 // Get single product
 exports.getProduct = async (req, res) => {
@@ -162,4 +135,4 @@ exports.getProductsByCategory = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error fetching products by category' });
   }
-}; 
+};
