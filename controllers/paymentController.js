@@ -13,9 +13,9 @@ const razorpay = new Razorpay({
 exports.createOrder = async (req, res) => {
   try {
     const { amount, currency = 'INR', receipt } = req.body;
-
+    console.log(amount, currency = 'INR', receipt )
     const options = {
-      amount: amount * 100, // Razorpay expects amount in paise
+      amount: amount * 100, 
       currency,
       receipt,
       payment_capture: 1
@@ -32,9 +32,7 @@ exports.createOrder = async (req, res) => {
 // Verify payment and create order
 exports.verifyPayment = async (req, res) => {
   try {
-    console.log('Verifying payment...');
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderData } = req.body;
-
     // Verify the payment signature
     const generated_signature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
@@ -49,12 +47,8 @@ exports.verifyPayment = async (req, res) => {
     }
 
     let order;
-
     // If orderData is provided, create a new order
     if (orderData) {
-      console.log('Creating new order with payment data...');
-      
-      // Create the order in the database
       order = new Order({
         user: req.user.id,
         items: orderData.items,
@@ -94,9 +88,9 @@ exports.verifyPayment = async (req, res) => {
 
     // Format address for email
     const formattedAddress = `
-${order.address.street}
-${order.address.city}, ${order.address.state}
-PIN: ${order.address.pincode}
+        ${order.address.street}
+        ${order.address.city}, ${order.address.state}
+        PIN: ${order.address.pincode}
     `.trim();
 
     // Prepare order details for email
@@ -117,17 +111,11 @@ PIN: ${order.address.pincode}
       paymentStatus: order.paymentStatus
     };
 
-    console.log('Sending payment confirmation emails...');
-    console.log('Order Details:', JSON.stringify(orderDetails, null, 2));
-
     try {
       // Send confirmation email to user
       const userEmailResult = await sendOrderConfirmationToUser(order.user.email, orderDetails);
-      console.log('User email sent successfully:', userEmailResult.messageId);
-
       // Send notification email to admin
       const adminEmailResult = await sendOrderNotificationToAdmin(orderDetails);
-      console.log('Admin email sent successfully:', adminEmailResult.messageId);
 
       res.json({
         success: true,

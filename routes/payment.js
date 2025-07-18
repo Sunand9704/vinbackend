@@ -17,7 +17,7 @@ const razorpay = new Razorpay({
 router.post('/create-order', authenticateToken, async (req, res) => {
   try {
     const { amount, currency = 'INR', receipt } = req.body;
-
+    console.log(amount, currency, receipt )
     // Create Razorpay order
     const order = await razorpay.orders.create({
       amount: amount * 100, // Razorpay expects amount in paise
