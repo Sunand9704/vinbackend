@@ -11,6 +11,7 @@ const app = express();
 // CORS configuration
 const corsOptions = {
   origin: [
+    "https://front3-f3cj.onrender.com",
     "https://vin2grow-latest-admin.onrender.com",
     "https://vin2grow-latest-frontend.onrender.com",
     "http://localhost:3000",
