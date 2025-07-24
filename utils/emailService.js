@@ -1,18 +1,14 @@
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+const nodemailer = require("nodemailer");
+require("dotenv").config();
 
 // Create reusable transporter object using SMTP transport
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false  
-    }
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER || "laptoptest7788@gmail.com",
+    pass: process.env.EMAIL_PASSWORD || "uqfiabjkiqudrgdw",
+  },
 });
-
 
 // Email template styles
 const emailStyles = `
@@ -80,56 +76,80 @@ const emailStyles = `
 `;
 
 // Verify transporter configuration
-transporter.verify(function(error, success) {
-    if (error) {
-        console.error('Email configuration error:', error);
-    } else {
-        console.log('Email server is ready to send messages');
-    }
+transporter.verify(function (error, success) {
+  if (error) {
+    console.error("Email configuration error:", error);
+  } else {
+    console.log("Email server is ready to send messages");
+  }
 });
 
 // Send order confirmation email to user
 const sendOrderConfirmationToUser = async (userEmail, orderDetails) => {
-    try {
-        console.log('Preparing to send user email to:', userEmail);
+  try {
+    console.log("Preparing to send user email to:", userEmail);
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: userEmail,
-            subject: 'Order Confirmation - Your Pickle Order',
-            html: orderConfirmationTemplate(orderDetails)
-        };
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: userEmail,
+      subject: "Order Confirmation - Your Pickle Order",
+      html: orderConfirmationTemplate(orderDetails),
+    };
 
-        console.log('Sending user email...');
-        const info = await transporter.sendMail(mailOptions);
-        console.log('User email sent successfully:', info.messageId);
-        return info;
-    } catch (error) {
-        console.error('Error sending user email:', error);
-        throw error;
-    }
+    console.log("Sending user email...");
+    const info = await transporter.sendMail(mailOptions);
+    console.log("User email sent successfully:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending user email:", error);
+    throw error;
+  }
 };
 
 // Send order notification email to admin
 const sendOrderNotificationToAdmin = async (orderDetails) => {
-    try {
-        console.log('Preparing to send admin email to:', process.env.ADMIN_EMAIL);
-        
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: process.env.ADMIN_EMAIL,
-            subject: 'New Order Received',
-            html: adminNotificationTemplate(orderDetails)
-        };
+  try {
+    console.log("Preparing to send admin email to:", process.env.ADMIN_EMAIL);
 
-        console.log('Sending admin email...');
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Admin email sent successfully:', info.messageId);
-        return info;
-    } catch (error) {
-        console.error('Error sending admin email:', error);
-        throw error;
-    }
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.ADMIN_EMAIL,
+      subject: "New Order Received",
+      html: adminNotificationTemplate(orderDetails),
+    };
+
+    console.log("Sending admin email...");
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Admin email sent successfully:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending admin email:", error);
+    throw error;
+  }
+};
+
+// Send OTP to vendor email
+const sendOtpVendorEmail = async (vendorEmail, otp) => {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: vendorEmail,
+      subject: "Your Vendor OTP Code",
+      html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+                    <h2 style="color: #333; text-align: center;">Your OTP Code</h2>
+                    <p style="font-size: 18px; text-align: center; letter-spacing: 2px; font-weight: bold;">${otp}</p>
+                    <p style="color: #666; font-size: 14px;">This OTP is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+                </div>
+            `,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Vendor OTP email sent:", info.messageId);
+    return info;
+  } catch (error) {
+    console.error("Error sending vendor OTP email:", error);
+    throw error;
+  }
 };
 
 const orderConfirmationTemplate = (orderDetails) => `
@@ -164,13 +184,21 @@ const orderConfirmationTemplate = (orderDetails) => `
             
             <h2>Order Details:</h2>
             <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
-            <p><strong>Order Date:</strong> ${new Date(orderDetails.orderDate).toLocaleDateString()}</p>
-            <p><strong>Delivery Date:</strong> ${new Date(orderDetails.deliveryDate).toLocaleDateString()}</p>
+            <p><strong>Order Date:</strong> ${new Date(
+              orderDetails.orderDate
+            ).toLocaleDateString()}</p>
+            <p><strong>Delivery Date:</strong> ${new Date(
+              orderDetails.deliveryDate
+            ).toLocaleDateString()}</p>
             <p><strong>Delivery Time:</strong> ${orderDetails.deliveryTime}</p>
             
             <h3>Payment Information:</h3>
             <p><strong>Payment Status:</strong> 
-                <span class="status ${orderDetails.paymentStatus === 'paid' ? 'status-paid' : 'status-pending'}">
+                <span class="status ${
+                  orderDetails.paymentStatus === "paid"
+                    ? "status-paid"
+                    : "status-pending"
+                }">
                     ${orderDetails.paymentStatus}
                 </span>
             </p>
@@ -181,9 +209,13 @@ const orderConfirmationTemplate = (orderDetails) => `
 
             <h3>Order Items:</h3>
             <ul>
-                ${orderDetails.items.map(item => `
+                ${orderDetails.items
+                  .map(
+                    (item) => `
                     <li>${item.name} - Quantity: ${item.quantity} - Price: ₹${item.price}</li>
-                `).join('')}
+                `
+                  )
+                  .join("")}
             </ul>
         </div>
         <div class="footer">
@@ -224,13 +256,21 @@ const adminNotificationTemplate = (orderDetails) => `
             <h2>Order Details:</h2>
             <p><strong>Order ID:</strong> ${orderDetails.orderId}</p>
             <p><strong>Customer Email:</strong> ${orderDetails.userEmail}</p>
-            <p><strong>Order Date:</strong> ${new Date(orderDetails.orderDate).toLocaleDateString()}</p>
-            <p><strong>Delivery Date:</strong> ${new Date(orderDetails.deliveryDate).toLocaleDateString()}</p>
+            <p><strong>Order Date:</strong> ${new Date(
+              orderDetails.orderDate
+            ).toLocaleDateString()}</p>
+            <p><strong>Delivery Date:</strong> ${new Date(
+              orderDetails.deliveryDate
+            ).toLocaleDateString()}</p>
             <p><strong>Delivery Time:</strong> ${orderDetails.deliveryTime}</p>
             
             <h3>Payment Information:</h3>
             <p><strong>Payment Status:</strong> 
-                <span class="status ${orderDetails.paymentStatus === 'paid' ? 'status-paid' : 'status-pending'}">
+                <span class="status ${
+                  orderDetails.paymentStatus === "paid"
+                    ? "status-paid"
+                    : "status-pending"
+                }">
                     ${orderDetails.paymentStatus}
                 </span>
             </p>
@@ -241,9 +281,13 @@ const adminNotificationTemplate = (orderDetails) => `
 
             <h3>Order Items:</h3>
             <ul>
-                ${orderDetails.items.map(item => `
+                ${orderDetails.items
+                  .map(
+                    (item) => `
                     <li>${item.name} - Quantity: ${item.quantity} - Price: ₹${item.price}</li>
-                `).join('')}
+                `
+                  )
+                  .join("")}
             </ul>
         </div>
         <div class="footer">
@@ -255,6 +299,7 @@ const adminNotificationTemplate = (orderDetails) => `
 `;
 
 module.exports = {
-    sendOrderConfirmationToUser,
-    sendOrderNotificationToAdmin
-}; 
+  sendOrderConfirmationToUser,
+  sendOrderNotificationToAdmin,
+  sendOtpVendorEmail,
+};
