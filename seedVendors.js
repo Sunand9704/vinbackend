@@ -8,11 +8,22 @@ const vendors = [
     name: "Vendor One",
     email: "hosannarocker6594@gmail.com",
     password: "password123",
+    category: [
+      "Sanchi Stupa",
+      "Warli House",
+      "Tiger Crafting"
+    ],
   },
   {
     name: "Vendor Two",
     email: "bambooartandcraft@gmail.com",
     password: "94075#@Bamboo",
+    category: [
+      "Bamboo Peacock",
+      "Miniaure Ship",
+      "Bamboo Trophy",
+      "Bamboo Ganesha"
+    ],
   },
 ];
 

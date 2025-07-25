@@ -7,7 +7,7 @@ const { sendOtpVendorEmail } = require("../utils/emailService");
 // Vendor login
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, category } = req.body;
     const vendor = await Vendor.findOne({ email });
     console.log("Email ok");
 
@@ -18,6 +18,10 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, vendor.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
+    }
+    // Check if category exists in vendor's categories
+    if (!category || !vendor.category.includes(category)) {
+      return res.status(400).json({ error: "Selected category is not associated with this vendor" });
     }
     console.log("matched");
 
@@ -148,5 +152,57 @@ exports.updatePassword = async (req, res) => {
   } catch (error) {
     console.error("Vendor update password error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Create a new vendor (admin)
+exports.createVendor = async (req, res) => {
+  try {
+    const { name, email, password, category } = req.body;
+    if (!name || !email || !password || !category || !category.length) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+    const existing = await Vendor.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ error: "Vendor with this email already exists" });
+    }
+    const bcrypt = require("bcryptjs");
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const vendor = new Vendor({
+      name,
+      email,
+      password: hashedPassword,
+      category,
+    });
+    await vendor.save();
+    res.status(201).json({ message: "Vendor created successfully", vendor });
+  } catch (error) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+// Get all vendors (admin)
+exports.getAllVendors = async (req, res) => {
+  try {
+    const vendors = await Vendor.find().select('-password').sort({ createdAt: -1 });
+    res.json(vendors);
+  } catch (error) {
+    console.error('Get all vendors error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Delete a vendor by ID (admin)
+exports.deleteVendor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vendor = await Vendor.findByIdAndDelete(id);
+    if (!vendor) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+    res.json({ message: 'Vendor deleted successfully' });
+  } catch (error) {
+    console.error('Delete vendor error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 };

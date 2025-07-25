@@ -15,6 +15,7 @@ const corsOptions = {
     "https://vin2grow-latest-admin.onrender.com",
     "https://vin2grow-latest-frontend.onrender.com",
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://localhost:5173",
   ],
   credentials: true,

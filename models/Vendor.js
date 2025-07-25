@@ -22,6 +22,10 @@ const vendorSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    category: {
+      type: [String],
+      required: true,
+    },
     resetPasswordToken: {
       type: String,
     },
