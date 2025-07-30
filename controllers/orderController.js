@@ -82,6 +82,21 @@ exports.createOrder = async (req, res) => {
     await order.save();
     console.log("the saved order", order);
 
+    // Update sold count for each product in the order
+    try {
+      for (const item of items) {
+        await Product.findByIdAndUpdate(
+          item.product,
+          { $inc: { soldCount: item.quantity } },
+          { new: true }
+        );
+      }
+      console.log("Updated sold count for all products in order");
+    } catch (updateError) {
+      console.error("Error updating sold count:", updateError);
+      // Don't fail the order creation if sold count update fails
+    }
+
     // Populate user and product details for email
     const populatedOrder = await Order.findById(order._id)
       .populate("user", "email name")
@@ -187,6 +202,26 @@ exports.getAllOrders = async (req, res) => {
   } catch (error) {
     console.error("Error fetching all orders:", error);
     res.status(500).json({ error: "Error fetching orders" });
+  }
+};
+
+// Utility function to update product sold count
+const updateProductSoldCount = async (orderId, action = "add") => {
+  try {
+    const order = await Order.findById(orderId).populate("items.product");
+    if (!order) return;
+
+    for (const item of order.items) {
+      const quantity = action === "add" ? item.quantity : -item.quantity;
+      await Product.findByIdAndUpdate(
+        item.product._id,
+        { $inc: { soldCount: quantity } },
+        { new: true }
+      );
+    }
+    console.log(`Updated sold count for order ${orderId} (action: ${action})`);
+  } catch (error) {
+    console.error("Error updating sold count:", error);
   }
 };
 
@@ -298,10 +333,13 @@ exports.cancelOrder = async (req, res) => {
     order.status = "cancelled";
     await order.save();
 
-    // Restore product stock
+    // Restore product stock and reduce sold count
     for (const item of order.items) {
       await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity },
+        $inc: {
+          stock: item.quantity,
+          soldCount: -item.quantity, // Reduce sold count when order is cancelled
+        },
       });
     }
 
